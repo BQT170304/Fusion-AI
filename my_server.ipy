@@ -1,0 +1,63 @@
+# CORS: giup client tu domain khac co the su dung tai nguyen (API) cua Flask, Python
+# SS: Flask: Bat SSL cho Backend de dam bao an toan du lieu
+# Can co cac file chua khoa va chung chi so SSL
+
+import os
+from random import random
+# Import flask
+from flask import Flask
+from flask import Flask, render_template, request
+from flask_cors import CORS, cross_origin
+# Import cac ham chinh
+from body_shape_calculator import get_body_shape
+from face_shape_detector import load_face_model, get_face_shape
+from skin_hair_color_detector import *
+
+# Face shape classes
+classes = ['Heart', 'Oblong', 'Oval', 'Round', 'Square']
+# Load Model 
+model = load_face_model()
+
+# Khởi tạo Flask
+app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = ""
+
+# Hàm xử lý request
+@app.route("/", methods=['GET', 'POST'])
+def home_page():
+    # Nếu là POST (gửi file)
+    if request.method == "POST":
+         try:
+            # Lấy file gửi lên
+            image = request.files['file']
+            if image:
+                # Lưu file
+                path_to_save = os.path.join(app.config['UPLOAD_FOLDER'], 'static/' + image.filename)
+                print("Save = ", path_to_save)
+                image.save(path_to_save)
+                if detect_face(path_to_save) == False:
+                    return render_template("index.html", msg="Anh khong hop le")
+
+                label = get_face_shape(model, classes, image_path=path_to_save)
+                # skin_color = get_skin_color(path_to_save)
+                # hair_color = get_hair_color(path_to_save)
+                
+                # Trả về kết quả
+                return render_template("index.html", label=label,
+                                        msg="Tải file lên thành công")
+            else:
+                # Nếu không có file thì yêu cầu tải file
+                return render_template('index.html', msg='Hãy chọn file để tải lên')
+
+         except Exception as ex:
+            # Nếu lỗi thì thông báo
+            print(ex)
+            return render_template('index.html', msg='Không nhận diện được vật thể')
+
+    else:
+        # Nếu là GET thì hiển thị giao diện upload
+        return render_template('index.html')
+
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', debug=True)

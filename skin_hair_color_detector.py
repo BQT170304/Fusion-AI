@@ -8,6 +8,7 @@ import torch.nn as nn
 import torchvision
 from torchvision import transforms
 import cv2
+from timeit import default_timer
 
 class HairSegmentModel(nn.Module):
     def __init__(self):
@@ -18,6 +19,20 @@ class HairSegmentModel(nn.Module):
     def forward(self, x):
         y = self.dl(x)['out']
         return y
+
+def detect_face(image_path):
+    # Load the pre-trained Haar cascade file for face detection
+    cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+    face_cascade = cv2.CascadeClassifier(cascade_path)
+    image = cv2.imread(image_path)
+    # Convert the image to grayscale
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # Detect faces in the image
+    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+    if len(faces) > 0:
+        return True
+    else:
+        return False
 
 def get_skin_color(image_path):
     result = stone.process(image_path, image_type='auto', n_dominant_colors=1, return_report_image=True)
@@ -50,7 +65,7 @@ def get_hair_mask(image_path, checkpoint_path='./hair_color_model.pt'):
                                      transforms.ToTensor(),
                                      transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     Xtest = preprocess(img)
-    checkpoint = torch.load(checkpoint_path)
+    checkpoint = torch.load(checkpoint_path, map_location='cpu')
     model = HairSegmentModel()
     model.load_state_dict(checkpoint['state_dict'])
     with torch.no_grad():
@@ -70,7 +85,7 @@ def get_hair_mask(image_path, checkpoint_path='./hair_color_model.pt'):
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
     return mask
 
-def get_hair_color(image_path, model_path='./hair_color_model.pt'):
+def get_hair_color(image_path):
     image = cv2.imread(image_path)  
     if image is None:
         print("Failed to load the image from:", image_path)
@@ -93,6 +108,9 @@ def get_hair_color(image_path, model_path='./hair_color_model.pt'):
     return tuple(hair_color_rgb)
     
 if __name__ == '__main__':
-    image_path = ''  # get image path to detect
+    image_path = './bqt.jpg'  # get image path to detect
+    # start = default_timer()
     skin_color, hair_color = get_skin_color(image_path), get_hair_color(image_path)
+    # end = default_timer()
     print(f'Skin Tone: {skin_color} | Hair Color RGB: {hair_color}')
+    # print(f"Predict time: {end-start:.2f} seconds")

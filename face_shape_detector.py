@@ -10,14 +10,14 @@ from timeit import default_timer
 device = 'cpu'
 classes = ['Heart', 'Oblong', 'Oval', 'Round', 'Square']
 
-def load_model(weight_path='./best_model.pth'):
+def load_face_model(weight_path='./face_shape_model.pth'):
     weights = torch.load(weight_path)
     model = torchvision.models.efficientnet_b4()
     model.classifier = nn.Linear(model.classifier[1].in_features, len(classes))
     model.load_state_dict(weights)
     return model
 
-def pred_and_plot_image(
+def get_face_shape(
     model: torch.nn.Module,
     class_names,
     image_path: str,
@@ -36,7 +36,6 @@ def pred_and_plot_image(
                                     ])
 
     model.eval()
-    start_time = default_timer()
     with torch.inference_mode():
         transformed_image = image_transform(img).unsqueeze(dim=0)
         target_image_pred = model(transformed_image.to(device))
@@ -44,9 +43,7 @@ def pred_and_plot_image(
     target_image_pred_probs = torch.softmax(target_image_pred, dim=1)
     target_image_pred_label = torch.argmax(target_image_pred_probs, dim=1)
 
-    end_time = default_timer()
-    if target_image_pred_probs.max() > 0.8:
-        print(f"Predict time: {end_time-start_time:.2f} seconds")
+    if target_image_pred_probs.max() > 0.75:
         plt.figure()
         plt.imshow(img)
         plt.title(
@@ -54,15 +51,19 @@ def pred_and_plot_image(
         )
         plt.axis(False)
         plt.show()
-        print(class_names[target_image_pred_label] + 'Probability: ' + target_image_pred_probs.max())
+        print('Type: ' + class_names[target_image_pred_label] + ' | Probability: ' + str(target_image_pred_probs.max().item()))
+        return class_names[target_image_pred_label]
     else:
-        print('Please upload other image.')
+        return 'Please upload other image.'
     
 def main():
-    img_path = './images/oblong (10).jpg'
-    model = load_model()
+    img_path = './static/square (160).jpg'
+    # start = default_timer()
+    model = load_face_model()
     print('Load success')
-    pred_and_plot_image(model, class_names=classes, image_path=img_path)
+    type = get_face_shape(model, class_names=classes, image_path=img_path)
+    # end = default_timer()
+    # print(f"Predict time: {end - start:.2f} seconds")
     
 if __name__ == '__main__':
     main()
