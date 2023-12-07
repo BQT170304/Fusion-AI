@@ -22,9 +22,14 @@ model = load_face_model()
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = ""
 
-# Hàm xử lý request
-@app.route("/", methods=['GET', 'POST'])
+# Giao diện trang chủ
+@app.route("/")
 def home_page():
+    return render_template("home.html")
+
+# Giao diện đoán face shape
+@app.route("/face_shape", methods=['GET', 'POST']) # Face Shape
+def face_shape_func():
     # Nếu là POST (gửi file)
     if request.method == "POST":
          try:
@@ -36,28 +41,73 @@ def home_page():
                 print("Save = ", path_to_save)
                 image.save(path_to_save)
                 if detect_face(path_to_save) == False:
-                    return render_template("index.html", msg="Anh khong hop le")
+                    return render_template("face_shape.html", msg="Anh khong hop le")
 
-                label = get_face_shape(model, classes, image_path=path_to_save)
+                face_shape = get_face_shape(model, classes, image_path=path_to_save)
                 # skin_color = get_skin_color(path_to_save)
                 # hair_color = get_hair_color(path_to_save)
                 
-                # Trả về kết quả
-                return render_template("index.html", label=label,
-                                        msg="Tải file lên thành công")
+                label = f'Face: {face_shape}\n' 
+                
+                if face_shape in classes:
+                    # Trả về kết quả
+                    return render_template("face_shape.html", label=label,
+                                            msg="Tải file lên thành công")
+                else:
+                    # Anh chat luong kem
+                    return render_template("face_shape.html", 
+                                            msg="Vui lòng chọn ảnh khác")
             else:
                 # Nếu không có file thì yêu cầu tải file
-                return render_template('index.html', msg='Hãy chọn file để tải lên')
+                return render_template('face_shape.html', msg='Hãy chọn file để tải lên')
 
          except Exception as ex:
             # Nếu lỗi thì thông báo
             print(ex)
-            return render_template('index.html', msg='Không nhận diện được vật thể')
+            return render_template('face_shape.html', msg='Không nhận diện được vật thể')
 
     else:
         # Nếu là GET thì hiển thị giao diện upload
-        return render_template('index.html')
+        return render_template('face_shape.html')
 
+# Giao diện đoán personal color
+@app.route("/personal_color", methods=['GET', 'POST']) # Personal color
+def personal_color_func():
+    # Nếu là POST (gửi file)
+    if request.method == "POST":
+         try:
+            # Lấy file gửi lên
+            image = request.files['file']
+            if image:
+                # Lưu file
+                path_to_save = os.path.join(app.config['UPLOAD_FOLDER'], 'static/' + image.filename)
+                print("Save = ", path_to_save)
+                image.save(path_to_save)
+                if detect_face(path_to_save) == False:
+                    return render_template("personal_color.html", msg="Anh khong hop le")
+
+                skin_color = get_skin_color(path_to_save)
+                hair_color = get_hair_color(path_to_save)
+                
+                # Xu li de ra loai personal color
+                
+                label = 'Light Summer'
+                
+                    # Trả về kết quả
+                return render_template("personal_color.html", label=label,
+                                        msg="Tải file lên thành công")
+            else:
+                # Nếu không có file thì yêu cầu tải file
+                return render_template('personal_color.html', msg='Hãy chọn file để tải lên')
+
+         except Exception as ex:
+            # Nếu lỗi thì thông báo
+            print(ex)
+            return render_template('personal_color.html', msg='Không nhận diện được vật thể')
+
+    else:
+        # Nếu là GET thì hiển thị giao diện upload
+        return render_template('personal_color.html')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)

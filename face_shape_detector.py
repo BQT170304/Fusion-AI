@@ -43,21 +43,21 @@ def get_face_shape(
     target_image_pred_probs = torch.softmax(target_image_pred, dim=1)
     target_image_pred_label = torch.argmax(target_image_pred_probs, dim=1)
 
-    if target_image_pred_probs.max() > 0.75:
-        plt.figure()
-        plt.imshow(img)
-        plt.title(
-            f"Pred: {class_names[target_image_pred_label]} | Prob: {target_image_pred_probs.max():.3f}"
-        )
-        plt.axis(False)
-        plt.show()
+    if target_image_pred_probs.max() > 0.3:
+        # plt.figure()
+        # plt.imshow(img)
+        # plt.title(
+        #     f"Pred: {class_names[target_image_pred_label]} | Prob: {target_image_pred_probs.max():.3f}"
+        # )
+        # plt.axis(False)
+        # plt.show()
         print('Type: ' + class_names[target_image_pred_label] + ' | Probability: ' + str(target_image_pred_probs.max().item()))
         return class_names[target_image_pred_label]
     else:
         return 'Please upload other image.'
     
 def main():
-    img_path = './static/square (160).jpg'
+    img_path = './static/square.png'
     # start = default_timer()
     model = load_face_model()
     print('Load success')
